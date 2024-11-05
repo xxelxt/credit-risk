@@ -18,10 +18,10 @@ def transform(input_data, scaler, label_mapping):
     bins_dict = {
         "age": [20, 30, 40, 50, 60],
         "no_of_children": [-1, 0, 1, 2, 10],
-        "net_yearly_income": [0, 100000, 200000, 400000, 600000, float('inf')],
-        "no_of_days_employed": [-1, 1000, 10000, 100000, float('inf')],
+        "net_yearly_income": [0, 100000, 200000, 500000, float('inf')],
+        "no_of_days_employed": [-1, 1000, 3000, 6000, float('inf')],
         "total_family_members": [0, 1, 3, float('inf')],
-        "yearly_debt_payments": [0, 20000, 50000, 100000, float('inf')],
+        "yearly_debt_payments": [0, 10000, 25000, 50000, float('inf')],
         "credit_limit": [0, 50000, 100000, 200000, float('inf')],
         "credit_limit_used(%)": [-1, 25, 50, 75, 100],
         "credit_score": [0, 600, 700, 800, 900, float('inf')],
@@ -31,10 +31,10 @@ def transform(input_data, scaler, label_mapping):
     labels_dict = {
         "age": ['20-29', '30-39', '40-49', '50-59'],
         "no_of_children": ['0', '1', '2', '3+'],
-        "net_yearly_income": ['<100,000', '100,000-200,000', '200,000-400,000', '400,000-600,000', '>600,000'],
-        "no_of_days_employed": ['<1,000', '1,000-10,000', '10,000-100,000', '>100,000'],
+        "net_yearly_income": ['<100,000', '100,000-200,000', '200,000-500,000', '>500,000'],
+        "no_of_days_employed": ['<1,000', '1,000-3,000', '3,000-6,000', '>6,000'],
         "total_family_members": ['1', '2-3', '4+'],
-        "yearly_debt_payments": ['<20,000', '20,000-50,000', '50,000-100,000', '>100,000'],
+        "yearly_debt_payments": ['<10,000', '10,000-25,000', '25,000-50,000', '>50,000'],
         "credit_limit": ['<50,000', '50,000-100,000', '100,000-200,000', '>200,000'],
         "credit_limit_used(%)": ['0-25%', '25-50%', '50-75%', '75-100%'],
         "credit_score": ['<600', '600-700', '700-800', '800-900', '>900'],
@@ -47,9 +47,13 @@ def transform(input_data, scaler, label_mapping):
     for col in ['occupation_type'] + list(bins_dict.keys()):
         input_data[col] = input_data[col].map(lambda x: {v: k for k, v in label_mapping[col].items()}.get(x))
 
-    binary_features = ['gender', 'owns_car', 'owns_house', 'migrant_worker']
+    input_data['gender'] = input_data['gender'].apply(lambda x: 1 if x == "Nam" else 0)
+    
+    binary_features = ['owns_car', 'owns_house', 'migrant_worker', 'default_in_last_6months']
     for feature in binary_features:
         input_data[feature] = input_data[feature].apply(lambda x: 1 if x == "Có" else 0)
+
+    input_data = input_data.astype({col: 'int64' for col in input_data.select_dtypes('object').columns})
 
     continuous_columns = [
         'age', 'net_yearly_income', 'no_of_days_employed',
@@ -88,17 +92,17 @@ with st.sidebar:
         "Realty agents", "HR staff", "IT staff"
     ])
     
-    no_of_days_employed = st.number_input("Số ngày làm việc", min_value=2, max_value=365252, value=200)
-    net_yearly_income = st.number_input("Thu nhập hàng năm", min_value=0, max_value=50000000, value=50000000)
-    yearly_debt_payments = st.number_input("Số tiền thanh toán nợ hàng năm", min_value=2000, max_value=280000, value=5000)
+    no_of_days_employed = st.number_input("Số ngày làm việc", min_value=2, max_value=365252, value=200, format="%d")
+    net_yearly_income = st.number_input("Thu nhập hàng năm", min_value=0, max_value=2217660, value=500000, format="%d")
+    yearly_debt_payments = st.number_input("Số tiền thanh toán nợ hàng năm", min_value=2000, max_value=280000, value=5000, format="%d")
     st.markdown("---")
     
-    credit_limit = st.number_input("Hạn mức tín dụng", min_value=4000, max_value=650000, value=15000)
+    credit_limit = st.number_input("Hạn mức tín dụng", min_value=0, max_value=648100, value=150000, format="%d")
     credit_limit_used = st.slider("Phần trăm sử dụng hạn mức", min_value=0, max_value=100, value=20)
-    credit_score = st.slider("Điểm tín dụng", min_value=300, max_value=850, value=600)
+    credit_score = st.slider("Điểm tín dụng", min_value=400, max_value=950, value=600)
     
     prev_defaults = st.slider("Số lần vỡ nợ trước", min_value=0, max_value=10, value=0)
-    default_in_last_6months = st.slider("Số lần vỡ nợ trong 6 tháng qua", min_value=0, max_value=10, value=0)
+    default_in_last_6months = st.radio("Có vỡ nợ trong 6 tháng gần nhất?", ["Có", "Không"])
 
 input_data = pd.DataFrame({
     "age": [age],
@@ -126,7 +130,6 @@ prediction = model.predict(input_data)[0]
 risk = "Rủi ro cao" if prediction >= 0.5 else "Rủi ro thấp"
 
 st.write(f"<p style='font-size: 20px;'><b>Xác suất rủi ro tín dụng:</b> {predicted_probabilities[0]:.5f} <br><b>Đánh giá rủi ro:</b> {risk}</p>", unsafe_allow_html=True)
-# Display another subheader for the input information section
-st.subheader("Thông tin đã nhập:")
 
+st.subheader("Thông tin đã nhập:")
 st.json(input_data.to_dict(orient='records'))
