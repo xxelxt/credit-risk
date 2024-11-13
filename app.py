@@ -131,5 +131,5 @@ risk = "Rủi ro cao" if prediction >= 0.5 else "Rủi ro thấp"
 
 st.write(f"<p style='font-size: 20px;'><b>Xác suất rủi ro tín dụng:</b> {predicted_probabilities[0]:.5f} <br><b>Đánh giá rủi ro:</b> {risk}</p>", unsafe_allow_html=True)
 
-st.subheader("Thông tin đã nhập:")
-st.json(input_data.to_dict(orient='records'))
+# st.subheader("Thông tin đã nhập:")
+# st.json(input_data.to_dict(orient='records'))
